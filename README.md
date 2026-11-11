@@ -120,6 +120,6 @@ unified-secops-lab/
 ## About me
 
 **Leon Kiyonga** · Security Operations / Detection Engineering · Sacramento, CA
-[LinkedIn](https://www.linkedin.com/in/leon-kiyonga-ddungu) · [All projects](https://github.com/mataleon)
+[LinkedIn](https://www.linkedin.com/in/leon-kiyonga-ddungu-946b08252) · [All projects](https://github.com/mataleon)
 
 *This lab is for education and portfolio purposes. Lab data is synthetic.*
