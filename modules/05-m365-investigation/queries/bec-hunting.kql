@@ -1,0 +1,39 @@
+// ===== Email: who received the phish and where it landed =====
+EmailEvents
+| where Timestamp > ago(7d)
+| where Subject has "invoice" or SenderFromDomain == "<lab-sender-domain>"
+| project Timestamp, NetworkMessageId, SenderFromAddress, RecipientEmailAddress, Subject, DeliveryAction, DeliveryLocation, ThreatTypes
+
+// ===== Who clicked links from it =====
+UrlClickEvents
+| where Timestamp > ago(7d)
+| where AccountUpn =~ "victim.user@<lab-domain>"
+| project Timestamp, AccountUpn, Url, ActionType, IPAddress, Workload
+
+// ===== Sign-ins for the user, unfamiliar IPs first =====
+SigninLogs
+| where TimeGenerated > ago(7d)
+| where UserPrincipalName =~ "victim.user@<lab-domain>"
+| summarize SignIns = count(), Results = make_set(ResultType), Apps = make_set(AppDisplayName, 10),
+            First = min(TimeGenerated), Last = max(TimeGenerated)
+    by IPAddress, Country = tostring(LocationDetails.countryOrRegion)
+| order by First asc
+
+// ===== Inbox rules (Defender XDR CloudAppEvents) =====
+CloudAppEvents
+| where Timestamp > ago(7d)
+| where ActionType in ("New-InboxRule", "Set-InboxRule")
+| where RawEventData has_any ("ForwardTo", "RedirectTo", "ForwardAsAttachmentTo")
+| project Timestamp, AccountDisplayName, ActionType, IPAddress, RawEventData
+
+// ===== Graph API activity tied to the user's sign-in tokens =====
+let UserSignins = SigninLogs
+| where TimeGenerated > ago(7d)
+| where UserPrincipalName =~ "victim.user@<lab-domain>"
+| project UniqueTokenIdentifier, SigninIP = IPAddress, AppDisplayName;
+MicrosoftGraphActivityLogs
+| where TimeGenerated > ago(7d)
+| join kind=inner UserSignins on $left.SignInActivityId == $right.UniqueTokenIdentifier
+| extend Path = tostring(parse_url(RequestUri).Path)
+| summarize Requests = count(), Methods = make_set(RequestMethod) by Path, SigninIP, AppDisplayName, ResponseStatusCode
+| order by Requests desc

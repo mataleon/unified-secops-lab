@@ -1,0 +1,12 @@
+// Defender XDR custom detection — Encoded or obfuscated PowerShell
+// MITRE: T1059.001 (Execution), T1027 (Defense Evasion)
+// Create from: Advanced hunting → run → Create detection rule
+// Frequency: Every hour (looks back 4 hours) · Action: Collect investigation package
+// Required columns for device tables: Timestamp, DeviceId, ReportId
+DeviceProcessEvents
+| where Timestamp > ago(4h)
+| where FileName in~ ("powershell.exe", "pwsh.exe")
+| where ProcessCommandLine has_any ("-enc", "-EncodedCommand", "-e ", "FromBase64String", "-w hidden", "-WindowStyle Hidden", "IEX", "DownloadString")
+| where InitiatingProcessFileName !in~ ("SenseIR.exe", "MsSense.exe")   // exclude Defender's own live response
+| project Timestamp, DeviceId, DeviceName, ReportId, AccountName, AccountDomain,
+          ProcessCommandLine, InitiatingProcessFileName, InitiatingProcessCommandLine, SHA256

@@ -1,0 +1,42 @@
+id: 2b0766cd-b5ad-4ade-ad9d-4b392b8d8e9b
+name: VCBHN - Possible Kerberoasting (many RC4 service tickets)
+description: |
+  One account requests RC4-encrypted (0x17) Kerberos service tickets for 5+ distinct services in 1 hour.
+  Requires 4769 from domain controllers (see Module 01 custom XPath DCR).
+severity: Medium
+requiredDataConnectors:
+  - connectorId: WindowsSecurityEvents
+    dataTypes:
+      - SecurityEvent
+queryFrequency: 1h
+queryPeriod: 1h
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+  - CredentialAccess
+relevantTechniques:
+  - T1558.003
+query: |
+  SecurityEvent
+  | where EventID == 4769
+  | where TicketEncryptionType == "0x17"
+  | where ServiceName !endswith "$" and ServiceName != "krbtgt"
+  | summarize Services = dcount(ServiceName), ServiceList = make_set(ServiceName, 20),
+              StartTime = min(TimeGenerated)
+      by TargetUserName, IpAddress, Computer
+  | where Services >= 5
+entityMappings:
+  - entityType: Account
+    fieldMappings:
+      - identifier: Name
+        columnName: TargetUserName
+  - entityType: IP
+    fieldMappings:
+      - identifier: Address
+        columnName: IpAddress
+  - entityType: Host
+    fieldMappings:
+      - identifier: HostName
+        columnName: Computer
+version: 1.0.0
+kind: Scheduled

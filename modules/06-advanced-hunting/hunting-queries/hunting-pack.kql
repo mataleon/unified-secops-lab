@@ -1,0 +1,66 @@
+// VCBHN hunting pack. Run each block separately in Advanced hunting.
+
+// H1 — Rare processes (seen on fewer than 3 devices in 7 days)  [T1204]
+DeviceProcessEvents
+| where Timestamp > ago(7d)
+| summarize Devices = dcount(DeviceId), Executions = count(), AnyCmd = any(ProcessCommandLine) by SHA256, FileName
+| where Devices < 3
+| order by Executions asc
+
+// H2 — LOLBins making network connections  [T1218]
+DeviceNetworkEvents
+| where Timestamp > ago(7d)
+| where InitiatingProcessFileName in~ ("mshta.exe", "rundll32.exe", "regsvr32.exe", "certutil.exe", "bitsadmin.exe")
+| where RemoteIPType == "Public"
+| project Timestamp, DeviceName, InitiatingProcessFileName, InitiatingProcessCommandLine, RemoteIP, RemoteUrl
+
+// H3 — New scheduled tasks  [T1053.005]
+DeviceEvents
+| where Timestamp > ago(7d) and ActionType == "ScheduledTaskCreated"
+| extend TaskName = tostring(parse_json(AdditionalFields).TaskName)
+| project Timestamp, DeviceName, AccountName, TaskName, InitiatingProcessCommandLine
+
+// H4 — Run key persistence  [T1547.001]
+DeviceRegistryEvents
+| where Timestamp > ago(7d)
+| where RegistryKey has @"\CurrentVersion\Run"
+| where ActionType == "RegistryValueSet"
+| project Timestamp, DeviceName, RegistryKey, RegistryValueName, RegistryValueData, InitiatingProcessFileName
+
+// H5 — RDP fan-out from one account  [T1021.001]
+DeviceLogonEvents
+| where Timestamp > ago(7d) and LogonType == "RemoteInteractive" and ActionType == "LogonSuccess"
+| summarize Targets = dcount(DeviceName), DeviceList = make_set(DeviceName, 20) by AccountName, RemoteIP
+| where Targets > 2
+
+// H6 — Successful sign-in after many failures from the same IP  [T1110]
+let Failed = SigninLogs
+| where TimeGenerated > ago(1d) and ResultType == "50126"
+| summarize Failures = count() by IPAddress
+| where Failures >= 15;
+SigninLogs
+| where TimeGenerated > ago(1d) and ResultType == "0"
+| join kind=inner Failed on IPAddress
+| project TimeGenerated, UserPrincipalName, IPAddress, Failures, AppDisplayName
+
+// H7 — Sign-in volume anomalies (time series)
+SigninLogs
+| where TimeGenerated > ago(14d)
+| make-series SignIns = count() default = 0 on TimeGenerated from ago(14d) to now() step 1h
+| extend (Anomalies, Score, Baseline) = series_decompose_anomalies(SignIns, 2.5)
+| mv-expand TimeGenerated to typeof(datetime), SignIns to typeof(long), Anomalies to typeof(int)
+| where Anomalies != 0
+
+// H8 — Service principal credential added (cloud persistence)  [T1098.001]
+AuditLogs
+| where TimeGenerated > ago(30d)
+| where OperationName has_any ("Add service principal credentials", "Certificates and secrets management")
+| project TimeGenerated, OperationName, Actor = tostring(InitiatedBy.user.userPrincipalName), Target = tostring(TargetResources[0].displayName)
+
+// H9 — Enrich a suspicious hash with FileProfile()
+DeviceProcessEvents
+| where Timestamp > ago(7d)
+| summarize Executions = count() by SHA1, FileName
+| invoke FileProfile(SHA1, 100)
+| where GlobalPrevalence < 500 or isempty(Signer)
+| project FileName, SHA1, Executions, GlobalPrevalence, Signer, IsCertificateValid

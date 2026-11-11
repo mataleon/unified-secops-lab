@@ -1,0 +1,17 @@
+// ---- ASR audit and block events (last 7 days) ----
+DeviceEvents
+| where Timestamp > ago(7d)
+| where ActionType startswith "Asr"
+| summarize Events = count(), Devices = dcount(DeviceId), Example = any(ProcessCommandLine)
+    by ActionType, FileName, InitiatingProcessFileName
+| order by Events desc
+
+// ---- Network protection / indicator blocks ----
+DeviceEvents
+| where Timestamp > ago(7d)
+| where ActionType in ("ExploitGuardNetworkProtectionBlocked", "SmartScreenUrlWarning", "SmartScreenUrlBlocked")
+| project Timestamp, DeviceName, ActionType, RemoteUrl, RemoteIP, InitiatingProcessFileName
+
+// ---- Custom data collection: confirm the rule is collecting ----
+search in (DeviceCustomNetworkEvents, DeviceCustomProcessEvents, DeviceCustomFileEvents) "win11-ep-01"
+| summarize EventCount = count() by RuleName, $table

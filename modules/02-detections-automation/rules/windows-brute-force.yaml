@@ -1,0 +1,46 @@
+id: 9c3acaf7-906a-41b0-b72d-add04e5b0620
+name: VCBHN - Windows brute force against a single account
+description: |
+  Detects 10 or more failed logons (4625) for the same account from the same source within 15 minutes.
+  Lab emulation: repeated failed RDP or runas attempts against win-srv-01.
+severity: Medium
+requiredDataConnectors:
+  - connectorId: WindowsSecurityEvents
+    dataTypes:
+      - SecurityEvent
+queryFrequency: 15m
+queryPeriod: 15m
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+  - CredentialAccess
+relevantTechniques:
+  - T1110.001
+query: |
+  let threshold = 10;
+  SecurityEvent
+  | where EventID == 4625
+  | where AccountType =~ "User"
+  | summarize Failures = count(), StartTime = min(TimeGenerated), EndTime = max(TimeGenerated),
+              LogonTypes = make_set(LogonType, 10)
+      by TargetAccount, IpAddress, Computer
+  | where Failures >= threshold
+entityMappings:
+  - entityType: Account
+    fieldMappings:
+      - identifier: FullName
+        columnName: TargetAccount
+  - entityType: Host
+    fieldMappings:
+      - identifier: HostName
+        columnName: Computer
+  - entityType: IP
+    fieldMappings:
+      - identifier: Address
+        columnName: IpAddress
+customDetails:
+  FailedLogons: Failures
+eventGroupingSettings:
+  aggregationKind: AlertPerResult
+version: 1.0.0
+kind: Scheduled

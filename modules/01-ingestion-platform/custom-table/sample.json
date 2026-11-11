@@ -1,0 +1,11 @@
+[
+  {
+    "EventTime": "2026-11-10T18:00:00Z",
+    "AppName": "VCBHN-PatientPortal",
+    "UserPrincipalName": "victim.user@vcbhnlab.onmicrosoft.com",
+    "Action": "RecordExport",
+    "RecordCount": 250,
+    "SourceIP": "198.51.100.25",
+    "Result": "Success"
+  }
+]

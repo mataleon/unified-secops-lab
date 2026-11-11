@@ -1,0 +1,12 @@
+{
+  "servers": {
+    "sentinel-data-exploration": {
+      "type": "http",
+      "url": "https://sentinel.microsoft.com/mcp/data-exploration"
+    },
+    "sentinel-triage": {
+      "type": "http",
+      "url": "https://sentinel.microsoft.com/mcp/triage"
+    }
+  }
+}

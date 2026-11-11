@@ -1,0 +1,45 @@
+id: ef1ba55c-48c3-4255-986f-fb552ff827f0
+name: VCBHN - Consent granted to an application
+description: |
+  Alerts on user or admin consent to an application. Illicit consent grants give attackers
+  persistent API access that survives password resets.
+severity: Medium
+requiredDataConnectors:
+  - connectorId: AzureActiveDirectory
+    dataTypes:
+      - AuditLogs
+queryFrequency: 1h
+queryPeriod: 1h
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+  - Persistence
+  - CredentialAccess
+relevantTechniques:
+  - T1528
+query: |
+  AuditLogs
+  | where OperationName == "Consent to application"
+  | extend Actor = tostring(InitiatedBy.user.userPrincipalName),
+           ActorIP = tostring(InitiatedBy.user.ipAddress),
+           AppName = tostring(TargetResources[0].displayName),
+           AppId = tostring(TargetResources[0].id)
+  | mv-apply Prop = TargetResources[0].modifiedProperties on (
+        where tostring(Prop.displayName) == "ConsentContext.IsAdminConsent"
+        | extend IsAdminConsent = trim('"', tostring(Prop.newValue)))
+  | project TimeGenerated, Actor, ActorIP, AppName, AppId, IsAdminConsent, Result
+entityMappings:
+  - entityType: Account
+    fieldMappings:
+      - identifier: FullName
+        columnName: Actor
+  - entityType: IP
+    fieldMappings:
+      - identifier: Address
+        columnName: ActorIP
+  - entityType: CloudApplication
+    fieldMappings:
+      - identifier: Name
+        columnName: AppName
+version: 1.0.0
+kind: Scheduled

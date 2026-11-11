@@ -1,0 +1,43 @@
+id: 06707955-5c4f-469a-94a9-dc3192bd0a93
+name: VCBHN - Firewall traffic to a threat intelligence IP
+description: |
+  Matches active IPv4 indicators in ThreatIntelIndicators against destination IPs in CEF firewall logs.
+severity: High
+requiredDataConnectors:
+  - connectorId: ThreatIntelligence
+    dataTypes:
+      - ThreatIntelIndicators
+  - connectorId: CefAma
+    dataTypes:
+      - CommonSecurityLog
+queryFrequency: 1h
+queryPeriod: 14d
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+  - CommandAndControl
+relevantTechniques:
+  - T1071
+query: |
+  let Indicators = ThreatIntelIndicators
+  | where TimeGenerated > ago(14d)
+  | where IsActive == true and ValidUntil > now()
+  | where ObservableKey has "ipv4"
+  | summarize arg_max(TimeGenerated, *) by ObservableValue
+  | project TI_IP = ObservableValue, Confidence, IndicatorId = Id;
+  CommonSecurityLog
+  | where TimeGenerated > ago(1h)
+  | where isnotempty(DestinationIP)
+  | join kind=inner Indicators on $left.DestinationIP == $right.TI_IP
+  | project TimeGenerated, DeviceVendor, DeviceProduct, SourceIP, DestinationIP, DestinationPort, DeviceAction, Confidence, IndicatorId
+entityMappings:
+  - entityType: IP
+    fieldMappings:
+      - identifier: Address
+        columnName: DestinationIP
+  - entityType: IP
+    fieldMappings:
+      - identifier: Address
+        columnName: SourceIP
+version: 1.0.0
+kind: Scheduled

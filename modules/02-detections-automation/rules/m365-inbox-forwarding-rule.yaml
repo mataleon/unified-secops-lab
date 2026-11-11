@@ -1,0 +1,36 @@
+id: 900e1ec3-e6f0-4130-a836-c5081b9d8937
+name: VCBHN - Inbox rule forwards or redirects mail
+description: |
+  Business email compromise indicator: a mailbox rule that forwards or redirects mail.
+severity: Medium
+requiredDataConnectors:
+  - connectorId: Office365
+    dataTypes:
+      - OfficeActivity
+queryFrequency: 1h
+queryPeriod: 1h
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+  - Collection
+  - Exfiltration
+relevantTechniques:
+  - T1114.003
+query: |
+  OfficeActivity
+  | where OfficeWorkload == "Exchange"
+  | where Operation in ("New-InboxRule", "Set-InboxRule", "UpdateInboxRules")
+  | where Parameters has_any ("ForwardTo", "RedirectTo", "ForwardAsAttachmentTo")
+  | extend ClientIPOnly = tostring(split(ClientIP, ":")[0])
+  | project TimeGenerated, UserId, Operation, ClientIPOnly, Parameters
+entityMappings:
+  - entityType: Account
+    fieldMappings:
+      - identifier: FullName
+        columnName: UserId
+  - entityType: IP
+    fieldMappings:
+      - identifier: Address
+        columnName: ClientIPOnly
+version: 1.0.0
+kind: Scheduled

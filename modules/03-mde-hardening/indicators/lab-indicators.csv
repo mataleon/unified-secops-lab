@@ -1,0 +1,4 @@
+IndicatorType,IndicatorValue,ExpirationTime,Action,Severity,Title,Description,RecommendedActions,RbacGroups,Category,MitreTechniques,GenerateAlert
+IpAddress,203.0.113.66,2026-12-31T00:00:00.0Z,Block,Medium,VCBHN lab - blocked C2 IP,Lab test indicator (TEST-NET-3 documentation range),Investigate device communication,,CommandAndControl,T1071,True
+DomainName,malicious-lab-test.example,2026-12-31T00:00:00.0Z,Block,Medium,VCBHN lab - blocked domain,Lab test domain,Investigate device communication,,CommandAndControl,T1071,True
+FileSha256,275a021bbfb6489e54d471899f7db9d1663fc695ec2fe2a2c4538aabf651fd0f,2026-12-31T00:00:00.0Z,BlockAndRemediate,High,VCBHN lab - EICAR test file,SHA-256 of the EICAR test string,Confirm quarantine,,Malware,,True

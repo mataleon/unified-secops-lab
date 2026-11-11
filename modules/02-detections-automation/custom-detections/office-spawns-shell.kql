@@ -1,0 +1,9 @@
+// Defender XDR custom detection — Office application spawns a script interpreter (macro execution)
+// MITRE: T1204.002 (User Execution: Malicious File), T1059
+// Frequency: Every hour · Action: Isolate device (selective) — test in audit first
+DeviceProcessEvents
+| where Timestamp > ago(4h)
+| where InitiatingProcessFileName in~ ("winword.exe", "excel.exe", "powerpnt.exe", "outlook.exe", "onenote.exe")
+| where FileName in~ ("cmd.exe", "powershell.exe", "pwsh.exe", "wscript.exe", "cscript.exe", "mshta.exe", "rundll32.exe", "regsvr32.exe")
+| project Timestamp, DeviceId, DeviceName, ReportId, AccountName, FileName, ProcessCommandLine,
+          InitiatingProcessFileName, InitiatingProcessCommandLine

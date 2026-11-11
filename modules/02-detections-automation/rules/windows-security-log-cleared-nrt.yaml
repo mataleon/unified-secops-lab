@@ -1,0 +1,27 @@
+id: 616e71b9-8024-40a2-a409-36ca2db66462
+name: VCBHN - Security event log cleared (NRT)
+description: Event 1102 indicates the Security log was cleared, a common defense-evasion step.
+severity: High
+requiredDataConnectors:
+  - connectorId: WindowsSecurityEvents
+    dataTypes:
+      - SecurityEvent
+tactics:
+  - DefenseEvasion
+relevantTechniques:
+  - T1070.001
+query: |
+  SecurityEvent
+  | where EventID == 1102
+  | project TimeGenerated, Computer, Account = SubjectUserName, Activity
+entityMappings:
+  - entityType: Host
+    fieldMappings:
+      - identifier: HostName
+        columnName: Computer
+  - entityType: Account
+    fieldMappings:
+      - identifier: Name
+        columnName: Account
+version: 1.0.0
+kind: NRT

@@ -1,0 +1,13 @@
+# Secrets and local config
+.env
+*.pfx
+*.pem
+*.key
+local.settings.json
+# Python
+__pycache__/
+.venv/
+.ipynb_checkpoints/
+# Raw exports that may contain tenant data (sanitize before committing)
+*-raw.json
+*.pcap

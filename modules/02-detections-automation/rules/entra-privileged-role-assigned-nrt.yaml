@@ -1,0 +1,44 @@
+id: 7f7537c4-2944-4a2f-a326-ad165fcddd27
+name: VCBHN - Privileged Entra role assigned (NRT)
+description: |
+  Near-real-time alert when a highly privileged Entra ID role is assigned (active or eligible).
+  Exclude approved admins with the ApprovedAdmins watchlist.
+severity: High
+requiredDataConnectors:
+  - connectorId: AzureActiveDirectory
+    dataTypes:
+      - AuditLogs
+tactics:
+  - PrivilegeEscalation
+  - Persistence
+relevantTechniques:
+  - T1098.003
+query: |
+  let PrivilegedRoles = dynamic(["Global Administrator", "Privileged Role Administrator",
+      "Privileged Authentication Administrator", "Security Administrator",
+      "Conditional Access Administrator", "Application Administrator", "Hybrid Identity Administrator"]);
+  AuditLogs
+  | where OperationName has_any ("Add member to role", "Add eligible member to role")
+  | where Result =~ "success"
+  | extend Actor = coalesce(tostring(InitiatedBy.user.userPrincipalName), tostring(InitiatedBy.app.displayName))
+  | extend TargetUser = tostring(TargetResources[0].userPrincipalName)
+  | mv-apply Prop = TargetResources[0].modifiedProperties on (
+        where tostring(Prop.displayName) == "Role.DisplayName"
+        | extend RoleName = trim('"', tostring(Prop.newValue)))
+  | where RoleName in~ (PrivilegedRoles)
+  | project TimeGenerated, OperationName, Actor, TargetUser, RoleName, CorrelationId
+entityMappings:
+  - entityType: Account
+    fieldMappings:
+      - identifier: FullName
+        columnName: TargetUser
+  - entityType: Account
+    fieldMappings:
+      - identifier: FullName
+        columnName: Actor
+customDetails:
+  RoleName: RoleName
+alertDetailsOverride:
+  alertDisplayNameFormat: "Privileged role {{RoleName}} assigned to {{TargetUser}}"
+version: 1.0.0
+kind: NRT
