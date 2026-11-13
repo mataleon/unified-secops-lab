@@ -71,6 +71,25 @@
 
 **Done when:** the decisions table is complete with a reason for each table.
 
+## Results (run on 2026-11-11 to 2026-11-13)
+
+Built in my own lab tenant: workspace `law-secops-lab` (West US 2), VM `vm-win-01` (Windows Server 2022, AMA, Defender for Servers P2). Screenshots are cropped Cloud Shell output with no tenant, subscription or IP data.
+
+| Lab | Result | Evidence |
+|---|---|---|
+| 1.1 RBAC | Reader / Responder / Contributor assigned to 3 test users as **PIM-eligible**; matrix in [rbac-matrix.md](rbac-matrix.md) | — |
+| 1.2 Windows Security events (AMA + custom XPath DCR) | 4624, 4625 and 1102 collected from `vm-win-01` | [screenshot](evidence/lab12-securityevent-4624-4625-1102.png) |
+| 1.4 Azure Activity via Azure Policy | Remediation succeeded; test resource group create/delete landed in `AzureActivity` | [screenshot](evidence/lab14-18-azureactivity-signin-audit.png) |
+| 1.8 Microsoft Entra ID | Diagnostic setting with 7 categories; `SigninLogs` shows a success and a 50126 (bad password) failure; `AuditLogs` flowing | [setting](evidence/lab18-entra-id-diagnostic-setting.png) · [data](evidence/lab14-18-azureactivity-signin-audit.png) |
+
+### What went wrong and what I learned
+
+- **Azure Activity policy at the wrong scope.** I first assigned it to the resource group. The policy targets the *subscription* resource, which sits outside any resource group, so the remediation found nothing to fix. Reassigning it at subscription scope fixed it right away.
+- **Overlapping DCRs.** The connector's *Common* DCR and my custom XPath DCR both collect 4624/4625, so those events arrive twice. In production I'd keep one DCR per event set.
+- **Noise, not cost (yet).** Event 4673 (privileged service call) was about 915 events in 3 hours, more than everything else combined. Total `SecurityEvent` volume was still only about 0.004 GB over 3 days, so it was a signal-to-noise problem rather than a bill. It gets filtered in Lab 1.7.
+- **Defender XDR connector.** With the workspace onboarded to the unified Defender portal, the connector's "incidents and alerts" option is disabled by design. Incidents sync natively.
+- **Brand-new subscription has 0 vCPU quota for most VM families.** B-series had no capacity in West US 2, so the VM landed on D2ads_v7. Check `az vm list-usage` before choosing a size.
+
 ## Evidence
 
 Put sanitized screenshots in [evidence/](evidence/). See the [evidence checklist](../../templates/module-evidence-checklist.md).
