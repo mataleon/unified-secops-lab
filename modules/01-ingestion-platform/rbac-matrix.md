@@ -39,10 +39,25 @@ Checked on 2026-11-21 in Cloud Shell. Each built-in role's `actions` list was ma
 
 The results match Microsoft's documented matrix above, including the classic exam trap: **Contributor can't run playbooks.**
 
+### Hands-on test in the Defender portal (2026-11-21)
+
+Each user signed in fresh in a private window and tried the actions on incident #2 (raised by my brute-force rule) and on that rule itself.
+
+| Test user | Close / reopen incident #2 | Edit analytics rule | Evidence |
+|---|---|---|---|
+| `soc.reader` | ✗ "Limited access: read-only" banner, edit pencil greyed | ✗ Edit, Create, Enable, Disable, Delete greyed | [incident](evidence/lab11-reader-incident-readonly.png) · [rule](evidence/lab11-reader-rule-edit-blocked.png) |
+| `soc.responder` | ✓ reopened #2 (Closed → Open) | ✗ Edit and toolbar greyed | [incident](evidence/lab11-responder-reopened-incident.png) · [rule](evidence/lab11-responder-rule-edit-blocked.png) |
+| `soc.engineer` | ✓ closed #2 (Benign Positive) | ✓ edit wizard opened | [incident](evidence/lab11-engineer-closed-incident.png) · [rule](evidence/lab11-engineer-rule-edit-wizard.png) |
+
+All three results match the documented permissions.
+
 ## Findings
 
 - **No role can run playbooks, not even Contributor.** That needs **Microsoft Sentinel Playbook Operator** (run) or **Logic App Contributor** (run and edit). Sentinel itself also needs **Microsoft Sentinel Automation Contributor** on the playbook's resource group before automation rules can call a playbook.
 - **The P2 tenant defaulted to PIM-eligible assignments.** `az role assignment list` shows nothing for an eligible user until they activate the role, so I first thought the assignments had failed. Activation also needs a **fresh sign-in**: a browser session opened before activation keeps the old token, and the portal still blocks the action.
+- **Stale session after a role change.** soc.engineer was first blocked from editing even with Contributor active. The browser session had been opened before the role change. Signing out and back in fixed it.
+- **Portal quirk.** For soc.engineer, the **Edit** button in the rule's side panel stayed greyed out, but **⋯ → Edit** on the rule row opened the wizard. If an action looks blocked, check the toolbar (Create/Enable/Delete) to see what the role really allows.
+- **Default filters hide closed or low-priority incidents.** The new Cases view starts with a "Priority score 15–100" filter, so incident #2 seemed to be missing until I removed it.
 - **Role assignments are cumulative.** A Reader who is also a Contributor gets Contributor rights, so audit for stacked roles.
 
 **Takeaway:** a SOC analyst needs **Responder** to work incidents and **Playbook Operator** to run response actions. **Contributor** is for detection engineers who change rules and content. All three should be PIM-eligible, not permanent.
