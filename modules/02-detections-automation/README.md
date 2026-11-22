@@ -37,13 +37,13 @@ Rules and automation are deployed from this repo with [tools/deploy_rules.py](..
 |---|---|---|
 | 6 analytics rules deployed (4 scheduled, 2 NRT) | ✅ | [deploy output](evidence/lab21-deploy-rules-as-code.png) |
 | Windows brute force | ✅ Fired: incident #2 (10 runas failures) | see Module 01 |
-| Security log cleared (NRT) | ⏳ Log cleared on `vm-win-01` via Run Command. **Defender for Endpoint fired first** with multi-stage incident #3 (attempt to clear event log / event log cleared / suspicious activity through Azure VM extension) | [incident #3](evidence/lab21-mde-log-clear-incident3.png) |
+| Security log cleared (NRT) | ✅ Fired: **incident #4 (High)**. Log cleared on `vm-win-01` via Run Command. **Defender for Endpoint fired first** with multi-stage incident #3 (attempt to clear event log / event log cleared / suspicious activity through Azure VM extension). 1102 arrived twice because of the overlapping DCRs from Module 01 | [incident #3](evidence/lab21-mde-log-clear-incident3.png) · [incident #4](evidence/lab21-log-cleared-nrt-incident4.png) |
 | Privileged Entra role assigned (NRT) | ⏳ Waiting for the trigger | — |
 | Consent granted to an application | ⏳ Waiting for the trigger | — |
 | Entra password spray | Deployed; needs 10+ accounts from one IP to fire | — |
 | Kerberoasting | Deployed; needs a domain controller (4769) | — |
 | TI IP match, M365 inbox forwarding | Not deployed: CommonSecurityLog / OfficeActivity not connected yet | — |
-| Automation rules AR01–AR03 | ✅ AR01 suppression **expires after 30 days** | [rules](evidence/lab25-automation-rules.png) |
+| Automation rules AR01–AR03 | ✅ AR01 suppression **expires after 30 days**. AR03 verified: it added its 3 triage tasks to High incident #4 automatically | [rules](evidence/lab25-automation-rules.png) · [tasks on #4](evidence/lab25-ar03-tasks-on-incident4.png) |
 | AR04 + notify playbook | Not started | — |
 
 ### What broke on the first deploy (and the fixes)
