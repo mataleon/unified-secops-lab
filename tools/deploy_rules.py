@@ -22,6 +22,9 @@ except ImportError:
     sys.exit("PyYAML is required: pip install pyyaml")
 
 API = "2024-03-01"
+# NRT rules are rejected by the GA API versions ("Unsupported api-version ... for kind: NRT"),
+# so they go through the preview API.
+API_BY_KIND = {"NRT": "2024-10-01-preview"}
 DURATIONS = {"m": "M", "h": "H"}
 
 
@@ -109,7 +112,7 @@ def main():
         with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as tmp:
             json.dump(body, tmp)
         result = subprocess.run(
-            ["az", "rest", "--method", "put", "--url", f"{base}/{rule['id']}?api-version={API}",
+            ["az", "rest", "--method", "put", "--url", f"{base}/{rule['id']}?api-version={API_BY_KIND.get(rule['kind'], API)}",
              "--body", f"@{tmp.name}", "--query", "properties.displayName", "-o", "tsv"],
             capture_output=True, text=True,
         )

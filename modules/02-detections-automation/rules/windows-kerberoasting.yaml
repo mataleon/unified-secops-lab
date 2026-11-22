@@ -19,6 +19,8 @@ relevantTechniques:
 query: |
   SecurityEvent
   | where EventID == 4769
+  // TicketEncryptionType isn't a SecurityEvent column; it lives in the EventData XML.
+  | extend TicketEncryptionType = extract(@'Name="TicketEncryptionType">([^<]+)<', 1, EventData)
   | where TicketEncryptionType == "0x17"
   | where ServiceName !endswith "$" and ServiceName != "krbtgt"
   | summarize Services = dcount(ServiceName), ServiceList = make_set(ServiceName, 20),
@@ -38,5 +40,5 @@ entityMappings:
     fieldMappings:
       - identifier: HostName
         columnName: Computer
-version: 1.0.0
+version: 1.0.1
 kind: Scheduled
