@@ -80,13 +80,15 @@ Built in my own lab tenant: workspace `law-secops-lab` (West US 2), VM `vm-win-0
 | 1.1 RBAC | Reader / Responder / Contributor assigned to 3 test users (PIM-eligible, then active); verified per role and hands-on tested in the Defender portal ([rbac-matrix.md](rbac-matrix.md)) | [7 screenshots](rbac-matrix.md) |
 | 1.2 Windows Security events (AMA + custom XPath DCR) | 4624, 4625 and 1102 collected from `vm-win-01` | [screenshot](evidence/lab12-securityevent-4624-4625-1102.png) |
 | 1.4 Azure Activity via Azure Policy | Remediation succeeded; test resource group create/delete landed in `AzureActivity` | [screenshot](evidence/lab14-18-azureactivity-signin-audit.png) |
+| 1.5 Threat intelligence | 3 indicators (IPv4 203.0.113.50, a test domain, a SHA-256 file hash) created through the Sentinel TI API, valid 30 days. Not yet visible in `ThreatIntelIndicators` at time of writing (table sync pending) | [screenshot](evidence/lab15-ti-indicators-created.png) |
+| 1.7 Retention, tiers and noise | Ingestion-time transformation drops event 4673 (about 70% of `SecurityEvent` volume); retention decisions recorded | [decisions](retention-decisions.md) · [transform](evidence/lab17-dcr-transform-drop-4673.png) |
 | 1.8 Microsoft Entra ID | Diagnostic setting with 7 categories; `SigninLogs` shows a success and a 50126 (bad password) failure; `AuditLogs` flowing | [setting](evidence/lab18-entra-id-diagnostic-setting.png) · [data](evidence/lab14-18-azureactivity-signin-audit.png) |
 
 ### What went wrong and what I learned
 
 - **Azure Activity policy at the wrong scope.** I first assigned it to the resource group. The policy targets the *subscription* resource, which sits outside any resource group, so the remediation found nothing to fix. Reassigning it at subscription scope fixed it right away.
 - **Overlapping DCRs.** The connector's *Common* DCR and my custom XPath DCR both collect 4624/4625, so those events arrive twice. In production I'd keep one DCR per event set.
-- **Noise, not cost (yet).** Event 4673 (privileged service call) was about 915 events in 3 hours, more than everything else combined. Total `SecurityEvent` volume was still only about 0.004 GB over 3 days, so it was a signal-to-noise problem rather than a bill. It gets filtered in Lab 1.7.
+- **Noise, not cost (yet).** Event 4673 (privileged service call) was about 915 events in 3 hours, more than everything else combined. Total `SecurityEvent` volume was still only about 0.004 GB over 3 days, so it was a signal-to-noise problem rather than a bill. It's now dropped at ingestion with a DCR transformation (Lab 1.7).
 - **Defender XDR connector.** With the workspace onboarded to the unified Defender portal, the connector's "incidents and alerts" option is disabled by design. Incidents sync natively.
 - **Brand-new subscription has 0 vCPU quota for most VM families.** B-series had no capacity in West US 2, so the VM landed on D2ads_v7. Check `az vm list-usage` before choosing a size.
 
