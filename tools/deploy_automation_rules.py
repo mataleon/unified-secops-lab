@@ -29,7 +29,7 @@ def az(*args):
 
 
 def rules(ws_id, responder_oid, responder_upn):
-    expires = (dt.datetime.utcnow() + dt.timedelta(days=30)).replace(microsecond=0).isoformat() + "Z"
+    expires = (dt.datetime.now(dt.timezone.utc) + dt.timedelta(days=30)).strftime("%Y-%m-%dT%H:%M:%SZ")
     brute_force_rule = f"{ws_id}/providers/Microsoft.SecurityInsights/alertRules/{BRUTE_FORCE_RULE_ID}"
     return {
         "ar01-suppress-lab-runas": {
