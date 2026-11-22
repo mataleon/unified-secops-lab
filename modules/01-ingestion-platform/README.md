@@ -77,7 +77,7 @@ Built in my own lab tenant: workspace `law-secops-lab` (West US 2), VM `vm-win-0
 
 | Lab | Result | Evidence |
 |---|---|---|
-| 1.1 RBAC | Reader / Responder / Contributor assigned to 3 test users (PIM-eligible, then active); permissions verified per role in [rbac-matrix.md](rbac-matrix.md) | [screenshot](evidence/lab11-rbac-role-permissions.png) |
+| 1.1 RBAC | Reader / Responder / Contributor assigned to 3 test users (PIM-eligible, then active); verified per role and hands-on tested in the Defender portal ([rbac-matrix.md](rbac-matrix.md)) | [7 screenshots](rbac-matrix.md) |
 | 1.2 Windows Security events (AMA + custom XPath DCR) | 4624, 4625 and 1102 collected from `vm-win-01` | [screenshot](evidence/lab12-securityevent-4624-4625-1102.png) |
 | 1.4 Azure Activity via Azure Policy | Remediation succeeded; test resource group create/delete landed in `AzureActivity` | [screenshot](evidence/lab14-18-azureactivity-signin-audit.png) |
 | 1.8 Microsoft Entra ID | Diagnostic setting with 7 categories; `SigninLogs` shows a success and a 50126 (bad password) failure; `AuditLogs` flowing | [setting](evidence/lab18-entra-id-diagnostic-setting.png) · [data](evidence/lab14-18-azureactivity-signin-audit.png) |
