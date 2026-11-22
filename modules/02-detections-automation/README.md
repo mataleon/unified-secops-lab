@@ -29,6 +29,31 @@ Sentinel → **MITRE ATT&CK** page → screenshot Active vs Simulated coverage b
 ## Lab 2.5 — Automation rules and playbook
 Follow [automation/automation-rules.md](automation/automation-rules.md) and [playbooks/README.md](playbooks/README.md).
 
+## Results so far (2026-11-21)
+
+Rules and automation are deployed from this repo with [tools/deploy_rules.py](../../tools/deploy_rules.py) and [tools/deploy_automation_rules.py](../../tools/deploy_automation_rules.py). Re-running either script updates rules in place.
+
+| Item | Status | Evidence |
+|---|---|---|
+| 6 analytics rules deployed (4 scheduled, 2 NRT) | ✅ | [deploy output](evidence/lab21-deploy-rules-as-code.png) |
+| Windows brute force | ✅ Fired: incident #2 (10 runas failures) | see Module 01 |
+| Security log cleared (NRT) | ⏳ Log cleared on `vm-win-01` via Run Command. **Defender for Endpoint fired first** with multi-stage incident #3 (attempt to clear event log / event log cleared / suspicious activity through Azure VM extension) | [incident #3](evidence/lab21-mde-log-clear-incident3.png) |
+| Privileged Entra role assigned (NRT) | ⏳ Waiting for the trigger | — |
+| Consent granted to an application | ⏳ Waiting for the trigger | — |
+| Entra password spray | Deployed; needs 10+ accounts from one IP to fire | — |
+| Kerberoasting | Deployed; needs a domain controller (4769) | — |
+| TI IP match, M365 inbox forwarding | Not deployed: CommonSecurityLog / OfficeActivity not connected yet | — |
+| Automation rules AR01–AR03 | ✅ AR01 suppression **expires after 30 days** | [rules](evidence/lab25-automation-rules.png) |
+| AR04 + notify playbook | Not started | — |
+
+### What broke on the first deploy (and the fixes)
+
+![First deploy failures](evidence/lab21-first-deploy-failures.png)
+
+1. **NRT rules were rejected by the GA API** ("Unsupported api-version … for kind: NRT"). The deploy script now sends NRT rules through `2024-10-01-preview`.
+2. **Kerberoasting referenced a column that doesn't exist.** `SecurityEvent` has no `TicketEncryptionType` column, so the query now extracts it from `EventData`. The YAML validator in CI checks structure, not schema, so only a real deployment caught this. That's a good argument for deploying to a test workspace in CI.
+3. **XDR caught the log clear before the SIEM.** The 1102 event took longer to reach `SecurityEvent` after the VM booted than Defender for Endpoint took to raise its own incident.
+
 ## Done when
 - [ ] 8 analytics rules deployed (6 scheduled, 2 NRT), each with a write-up
 - [ ] 2 XDR custom detections deployed and triggered once
